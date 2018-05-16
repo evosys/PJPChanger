@@ -12,14 +12,14 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>100</width>
-    <height>100</height>
+    <width>362</width>
+    <height>372</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>500</width>
-    <height>1000</height>
+    <width>362</width>
+    <height>372</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -187,7 +187,7 @@
      </rect>
     </property>
     <property name="title">
-     <string>Select Salesman xx1</string>
+     <string>N/A</string>
     </property>
     <widget class="QComboBox" name="cbDC">
      <property name="enabled">
@@ -221,7 +221,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>xx1</string>
+      <string>N/A</string>
      </property>
     </widget>
    </widget>
@@ -238,7 +238,7 @@
      <string notr="true"/>
     </property>
     <property name="title">
-     <string>Select Salesman xx2</string>
+     <string>N/A</string>
     </property>
     <widget class="QComboBox" name="cbXC">
      <property name="enabled">
@@ -272,7 +272,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>xx2</string>
+      <string>N/A</string>
      </property>
     </widget>
    </widget>
@@ -298,6 +298,23 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
+   <widget class="QToolButton" name="toolButton">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>325</y>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>...</string>
+    </property>
+    <property name="icon">
+     <iconset resource="res_rc.qrc">
+      <normaloff>:/resources/sql-server-icon-trim.png</normaloff>:/resources/sql-server-icon-trim.png</iconset>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -311,7 +328,6 @@
   </widget>
  </widget>
  <resources>
-  <include location="../toolsPJP/res_rc.qrc"/>
   <include location="res_rc.qrc"/>
  </resources>
  <connections/>

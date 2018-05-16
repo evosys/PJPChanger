@@ -29,8 +29,8 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
         for rSales in self.rowData:
             self.cbHCF.addItem(rSales[2], rSales[1])
             self.cbPC.addItem(rSales[2], rSales[1])
-            self.cbDC.addItem(rSales[2], rSales[1])
-            self.cbXC.addItem(rSales[2], rSales[1])
+            # self.cbDC.addItem(rSales[2], rSales[1])
+            # self.cbXC.addItem(rSales[2], rSales[1])
 
         # other components
         self.lbPath.hide()
@@ -41,8 +41,9 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
         # checking chekbox
         self.ckHCF.stateChanged.connect(self.chkHCF)
         self.ckPC.stateChanged.connect(self.chkPC)
-        self.ckDC.stateChanged.connect(self.chkDC)
-        self.ckXC.stateChanged.connect(self.chkXC)
+        # self.ckDC.stateChanged.connect(self.chkDC)
+        # self.ckXC.stateChanged.connect(self.chkXC)
+
 
     # checkBox HCF
     def chkHCF(self, state) :
@@ -63,22 +64,22 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
             return False
 
     # checkBox DC
-    def chkDC(self, state) :
-        if state == QtCore.Qt.Checked :
-            self.cbDC.setEnabled(True)
-            return True
-        else :
-            self.cbDC.setEnabled(False)
-            return False
+    # def chkDC(self, state) :
+        # if state == QtCore.Qt.Checked :
+            # self.cbDC.setEnabled(True)
+            # return True
+        # else :
+            # self.cbDC.setEnabled(False)
+            # return False
 
     # checkBox XC
-    def chkXC(self, state) :
-        if state == QtCore.Qt.Checked :
-            self.cbXC.setEnabled(True)
-            return True
-        else :
-            self.cbXC.setEnabled(False)
-            return False
+    # def chkXC(self, state) :
+        # if state == QtCore.Qt.Checked :
+            # self.cbXC.setEnabled(True)
+            # return True
+        # else :
+            # self.cbXC.setEnabled(False)
+            # return False
 
     # search data in array
     def SearchData(self, val) :
@@ -96,15 +97,15 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
         # username = 'sa'
         # password = 'unilever1'
 
-        # server = 'EVOSYS137\SQLEXPRESS'
-        # database = 'Centegy_SnDPro_UID'
-        # username = 'sa'
-        # password = 'unilever1'
+        server = 'EVOSYS137\SQLEXPRESS'
+        database = 'Centegy_SnDPro_UID'
+        username = 'sa'
+        password = 'unilever1'
 
-        server = 'den1.mssql4.gear.host'
-        database = 'sqlsrv'
-        username = 'sqlsrv'
-        password = 'terserah!'
+        # server = 'den1.mssql4.gear.host'
+        # database = 'sqlsrv'
+        # username = 'sqlsrv'
+        # password = 'terserah!'
 
         try:
             cnxn = pyodbc.connect(driver='{ODBC Driver 13 for SQL Server}',
@@ -122,7 +123,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
 
             raise SystemExit(0)
 
-        cursor.execute("SELECT PJP, DSR, LDESC FROM PJP_HEAD WHERE ACTIVE = 1")
+        cursor.execute("SELECT PJP, DSR, LDESC, SELL_CATEGORY FROM PJP_HEAD WHERE ACTIVE = 1")
 
         results = cursor.fetchall()
 
@@ -140,10 +141,12 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
             # enable checkbox
             self.ckHCF.setEnabled(True)
             self.ckPC.setEnabled(True)
-            self.ckDC.setEnabled(True)
-            self.ckXC.setEnabled(True)
+            # self.ckDC.setEnabled(True)
+            # self.ckXC.setEnabled(True)
+
         # End of def openXML
 
+    # change 2 digit from first c
 
     # set
     def setItem(self):
@@ -153,8 +156,8 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
             # set index combobox
             self.cbHCF.setCurrentIndex(0)
             self.cbPC.setCurrentIndex(0)
-            self.cbDC.setCurrentIndex(0)
-            self.cbXC.setCurrentIndex(0)
+            # self.cbDC.setCurrentIndex(0)
+            # self.cbXC.setCurrentIndex(0)
 
         else:
             tree = etree.parse(path)
@@ -166,12 +169,10 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
         if indexSales >= 0:
 
             self.cbHCF.setCurrentIndex(indexSales)
-
             self.cbPC.setCurrentIndex(indexSales)
+            # self.cbDC.setCurrentIndex(indexSales)
+            # self.cbXC.setCurrentIndex(indexSales)
 
-            self.cbDC.setCurrentIndex(indexSales)
-
-            self.cbXC.setCurrentIndex(indexSales)
         # End of def setItem.
 
     # logo path
@@ -197,14 +198,14 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
                 nameSales = str(self.cbPC.currentText())
 
             # for DC
-            if cmpCat == '3' :
-                codeSales = str(self.cbDC.itemData(self.cbDC.currentIndex()))
-                nameSales = str(self.cbDC.currentText())
+            # if cmpCat == '3' :
+                # codeSales = str(self.cbDC.itemData(self.cbDC.currentIndex()))
+                # nameSales = str(self.cbDC.currentText())
 
             # for XC
-            if cmpCat == '4' :
-                codeSales = str(self.cbXC.itemData(self.cbXC.currentIndex()))
-                nameSales = str(self.cbXC.currentText())
+            # if cmpCat == '4' :
+                # codeSales = str(self.cbXC.itemData(self.cbXC.currentIndex()))
+                # nameSales = str(self.cbXC.currentText())
 
             # Parsing file xml
             tree = etree.parse(pathXML)
@@ -221,9 +222,11 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
 
                 # get document number
                 DocNum = tree.find('.//DocumentNumber').text
+                DocNum = DocNum[:2] + cmpCat + DocNum[3:] # replace 3 digit from front
 
                 # get RVTKey
                 RVTKey = tree.find('.//RVTKey').text
+                RVTKey = RVTKey[:2] + cmpCat + RVTKey[3:] # replace 3 digit from front
 
                 # change RouteCode
                 tree.find('.//RouteCode').text = codePJP
@@ -233,11 +236,11 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
 
                 # change Document number
                 for node in tree.xpath('.//DocumentNumber') :
-                    node.text = DocNum + cmpCat
+                    node.text = DocNum
 
                 # change RVTKey
                 for node in tree.xpath('.//RVTKey') :
-                    node.text = RVTKey + cmpCat
+                    node.text = RVTKey
 
                 # change DocumentPrefix
                 for node in tree.xpath('.//DocumentPrefix') :
@@ -251,11 +254,12 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
             # write data XML with Value of combobox.
             if len(codePJP) > 0 and len(codeSales) > 0:
                 resPath, resFilename = os.path.split(pathXML)
+                current_dir = os.getcwd()
                 Fname, Fext = os.path.splitext(resFilename)
                 newDir = 'output_XML'
                 newFile = "{Fname}{cmpCat}{Fext}".format(Fname=Fname, cmpCat=cmpCat, Fext=Fext)
-                resPathFile = os.path.abspath(os.path.join(resPath, newDir, newFile))
-                resultPath = Path(os.path.abspath(os.path.join(resPath, newDir, newFile)))
+                resPathFile = os.path.abspath(os.path.join(current_dir, newDir, newFile))
+                resultPath = Path(os.path.abspath(os.path.join(current_dir, newDir, newFile)))
                 resultPath.parent.mkdir(parents=True, exist_ok=True)
 
                 tree.write(resPathFile, xml_declaration=True, encoding='utf-8', method="xml")
@@ -271,8 +275,9 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
         pathXML = self.lbPath.text()
         # get path directory
         resPath, resFilename = os.path.split(pathXML)
+        current_dir = os.getcwd()
         newDir = 'output_XML'
-        resultPath = Path(os.path.abspath(os.path.join(resPath, newDir)))
+        resultPath = Path(os.path.abspath(os.path.join(current_dir, newDir)))
 
         if len(pathXML) == 0:
 
@@ -290,13 +295,13 @@ class mainWindow(QMainWindow, Ui_PJPChanger):
                     catPO = '2'
                     self.changer(pathXML, catPO)
 
-                if self.ckDC.isChecked() :
-                    catPO = '3'
-                    self.changer(pathXML, catPO)
+                # if self.ckDC.isChecked() :
+                    # catPO = '3'
+                    # self.changer(pathXML, catPO)
 
-                if self.ckXC.isChecked() :
-                    catPO = '4'
-                    self.changer(pathXML, catPO)
+                # if self.ckXC.isChecked() :
+                    # catPO = '4'
+                    # self.changer(pathXML, catPO)
 
                 reply = QMessageBox.information(self, "Information", "Success!", QMessageBox.Ok)
                 if reply == QMessageBox.Ok :
