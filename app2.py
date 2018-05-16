@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os, sys, io, time, signal, inspect
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import *
@@ -172,7 +175,9 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
 
         que = "SELECT a.SKU FROM SKU_CATEGORY a INNER JOIN SELLING_CATEGORY b on b.SELL_CATEGORY = a.SELL_CATEGORY WHERE a.SELL_CATEGORY = ?"
 
-        cursor.execute(que, CatGor)
+        params = str(CatGor)
+
+        cursor.execute(que, params)
 
         results = cursor.fetchall()
 
@@ -202,7 +207,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
 
         que = "SELECT CONCAT(p.PJP,' / '+P.LDESC) as PJPSales, p.PJP, p.DSR, p.LDESC as SalesName, a.LDESC as CategoryName FROM PJP_HEAD p INNER JOIN SELLING_CATEGORY a on a.SELL_CATEGORY = p.SELL_CATEGORY INNER JOIN DSR ds on ds.DSR = p.DSR WHERE a.SELL_CATEGORY = ? and ds.JOB_TYPE = 01 and p.ACTIVE = 1"
 
-        params = (CatGor)
+        params = str(CatGor)
 
         cursor.execute(que, params)
 
