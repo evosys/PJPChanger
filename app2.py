@@ -173,7 +173,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
         cnxn = self.connDB()
         cursor = cnxn.cursor()
 
-        que = "SELECT a.SKU FROM SKU_CATEGORY a INNER JOIN SELLING_CATEGORY b on b.SELL_CATEGORY = a.SELL_CATEGORY WHERE a.SELL_CATEGORY = ?"
+        que = "SELECT a.SKU FROM SKU_CATEGORY a INNER JOIN SELLING_CATEGORY b on b.SELL_CATEGORY = a.SELL_CATEGORY WHERE a.SKU_INDEX IS NOT NULL and a.SKU_INDEX != '0' and a.SELL_CATEGORY = ?"
 
         params = str(CatGor)
 
