@@ -11,9 +11,11 @@ from lxml import etree
 import pyodbc
 import appinfo
 from pathlib import Path
+from datetime import datetime
 
 NEWDIR           = 'XML-output'
 EXIT_CODE_REBOOT = -23467876230
+LOGFOLDER = 'PJP_Log'
 
 _db    = "Centegy_SnDPro_UID"
 _uname = "sa"
@@ -282,6 +284,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                 # search sales PJP
                 srchTMP = self.SearchDataHCF(nameSales)
                 countDoc = "3"
+                catName = "HCF"
 
             # for PC
             if cmpCat == '102' :
@@ -290,6 +293,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                 # search sales PJP
                 srchTMP = self.SearchDataPC(nameSales)
                 countDoc = "2"
+                catName = "PC"
 
             # for DC
             # if cmpCat == '3' :
@@ -301,8 +305,28 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                 # codeSales = str(self.cbXC.itemData(self.cbXC.currentIndex()))
                 # nameSales = str(self.cbXC.currentText())
 
+            # formating filename and output dir
+            resPath, resFilename = os.path.split(pathXML)
+            current_dir = os.getcwd()
+            Fname, Fext = os.path.splitext(resFilename)
+            newFile = "{Fname}{cmpCat}{Fext}".format(Fname=Fname, cmpCat=cmpCat, Fext=Fext)
+            resPathFile = os.path.abspath(os.path.join(current_dir, NEWDIR, newFile))
+            resultPath = Path(os.path.abspath(os.path.join(current_dir, NEWDIR, newFile)))
+
+            # write log file
+            dirLog= "D:\OSDP"
+            logFile = "{Fname}{catName}{Fext}".format(Fname=Fname, catName='-'+catName, Fext='.log')
+            logPath = Path(os.path.abspath(os.path.join(dirLog, LOGFOLDER, logFile)))
+            logPath.parent.mkdir(parents=True, exist_ok=True)
+            nowTime = datetime.now()
+            curDate = nowTime.strftime("%d-%m-%Y %H:%M:%S") # current datetime
+            outLog = open(logPath, 'w')
+            outLog.write('Date\t\t\t:' +curDate+ '\n')
+
+
             # Parsing file xml
             tree = etree.parse(pathXML)
+
 
             # Validating the value before make any change
             if len(codeSales) > 0 :
@@ -313,6 +337,18 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
 
                 # format 4 Digit
                 codePJP = "{:0>4}".format(srch[1])
+
+                # get PO Number
+                PONum = tree.find('.//Comments').text
+                # get outlet code
+                ouletCode = tree.find('.//CustomerCode').text
+
+                # write outlet code
+                outLog.write('Outlet Code\t\t:' +ouletCode+ '\n')
+                # write PO number to log
+                outLog.write('PO Number\t\t:' +PONum+ '\n')
+                # write category
+                outLog.write('Category\t\t:' +catName+ '\n\n')
 
                 # get document number
                 DocNum = tree.find('.//DocumentNumber').text
@@ -344,28 +380,29 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
 
                 # get items by category
                 arrItems = self.getDataItems(cmpCat)
-
+                outLog.write('------------------------\n')
+                outLog.write('Below list SKU deleted:\n')
+                outLog.write('------------------------\n')
                 for order in tree.xpath("//SalesOrderDetail") :
                     item = order.xpath('ItemCode')
                     item_code = item[0].text
 
                     if item_code not in arrItems:
                         order.getparent().remove(order)
+                        outLog.write(item_code+ '\n')
+                        print(item_code)
+
+
+                print(PONum)
 
             else:
                 QMessageBox.warning(self, "Warning", "Please select Salesman first", QMessageBox.Ok)
 
             # write data XML with Value of combobox.
             if len(codePJP) > 0 and len(codeSales) > 0:
-                resPath, resFilename = os.path.split(pathXML)
-                current_dir = os.getcwd()
-                Fname, Fext = os.path.splitext(resFilename)
-                newFile = "{Fname}{cmpCat}{Fext}".format(Fname=Fname, cmpCat=cmpCat, Fext=Fext)
-                resPathFile = os.path.abspath(os.path.join(current_dir, NEWDIR, newFile))
-                resultPath = Path(os.path.abspath(os.path.join(current_dir, NEWDIR, newFile)))
                 resultPath.parent.mkdir(parents=True, exist_ok=True)
-
                 tree.write(resPathFile, xml_declaration=True, encoding='utf-8', method="xml")
+                outLog.close()
                 return True
             else :
                 return False

@@ -1,7 +1,7 @@
 VSVersionInfo(
     ffi=FixedFileInfo(
-        filevers=(2, 0, 1, 1),
-        prodvers=(2, 0, 1, 1),
+        filevers=(2, 1, 0, 0),
+        prodvers=(2, 1, 0, 0),
         mask=0x3f,
         flags=0x0,
         OS=0x40004,
@@ -18,13 +18,13 @@ VSVersionInfo(
             StringStruct('Comments', 'Designed and coded by richard.hari@live.com'),
             StringStruct('CompanyName', 'Unilever'),
             StringStruct('FileDescription', 'PJP Changer'),
-            StringStruct('FileVersion', '2, 0, 1, 1'),
+            StringStruct('FileVersion', '2, 1, 0, 0'),
             StringStruct('InternalName', 'PJP Changer'),
             StringStruct('LegalCopyright', '(2018) richard.hari@live.com.'),
             StringStruct('LegalTrademarks', 'N/A'),
             StringStruct('OriginalFilename', 'PJP_Changer.exe'),
             StringStruct('ProductName', 'PJP Changer'),
-            StringStruct('ProductVersion', '2, 0, 1, 1')
+            StringStruct('ProductVersion', '2, 1, 0, 0')
             ]
         )
         ]
