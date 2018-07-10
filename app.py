@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os, sys, io, time, signal, inspect
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import *
@@ -6,17 +9,20 @@ from PyQt5.QtCore import *
 from gui import Ui_PJPChanger
 from lxml import etree
 import pyodbc
+import appinfo
 from pathlib import Path
+from datetime import datetime
 
 NEWDIR           = 'XML-output'
 EXIT_CODE_REBOOT = -23467876230
-VERSION          = "2.0"
+LOGFOLDER = 'PJP_Log'
 
 _db    = "Centegy_SnDPro_UID"
 _uname = "sa"
 _pwd   = "unilever1"
 _configFile = "PJP_Changer.ini"
 
+# main class
 class mainWindow(QMainWindow, Ui_PJPChanger) :
     def __init__(self) :
         QMainWindow.__init__(self)
@@ -32,8 +38,8 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
         self.move(tr.topLeft())
 
         # Set database result as global variabel
-        self.rowDataHCF = self.getData(103)
-        self.rowDataPC = self.getData(102)
+        self.rowDataHCF = self.getDataSales(103)
+        self.rowDataPC = self.getDataSales(102)
 
         # populate combo box HCF
         for rSalesHCF in self.rowDataHCF:
@@ -44,6 +50,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
 
         # other components
         self.lbPath.hide()
+        self.lbPath.clear()
         self.btOpen.clicked.connect(self.openXml)
         self.btSave.clicked.connect(self.saveChange)
         self.edFile.textChanged.connect(self.setItem)
@@ -54,8 +61,9 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
         self.ckPC.stateChanged.connect(self.chkPC)
         # self.ckDC.stateChanged.connect(self.chkDC)
         # self.ckXC.stateChanged.connect(self.chkXC)
-        settings = QSettings(_configFile, "PJP_Changer")
 
+
+    # Frominput address server
     def FrmAddrs(self):
 
         qip = QtWidgets.QInputDialog()
@@ -64,7 +72,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
         settings = QSettings(_configFile, "PJP_Changer")
         DefSrvr = settings.value('server')
 
-        text, pressOK = qip.getText(self, "PJP Changer","Please enter address for database server:", QLineEdit.Normal, settings.value('server'))
+        text, pressOK = qip.getText(self, "PJP Changer","Please enter the hostname of the database server:", QLineEdit.Normal, settings.value('server'))
         if pressOK :
             if text != "" :
                 # save setting value
@@ -74,6 +82,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                 reply = QMessageBox.critical(self, "Error", "Please input address database server.", QMessageBox.Ok)
                 self.FrmAddrs()
 
+
     # checkBox HCF
     def chkHCF(self, state) :
         if state == QtCore.Qt.Checked :
@@ -82,6 +91,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
         else :
             self.cbHCF.setEnabled(False)
             return False
+
 
     # checkBox PC
     def chkPC(self, state) :
@@ -110,6 +120,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
             # self.cbXC.setEnabled(False)
             # return False
 
+
     # search data HCF in array
     def SearchDataHCF(self, val) :
         for findDat in self.rowDataHCF :
@@ -117,6 +128,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                 if data == val :
                     tmp = list(findDat)
                     return tmp
+
 
     # search data PC in array
     def SearchDataPC(self, val) :
@@ -126,33 +138,14 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                     tmp = list(findDat)
                     return tmp
 
-    # get data from database HCF
-    def getData(self, CatGor):
 
-        # default setting
+    # connect to DB
+    def connDB(self) :
         settings = QSettings(_configFile, "PJP_Changer")
         server = settings.value("server")
 
-        # Getting Data Section
-        # server = 'localhost\SQLEXPRESS'
-        # database = 'Centegy_SnDPro_UID'
-        # username = 'sa'
-        # password = 'unilever1'
-
-        # server = 'EVOSYS137\SQLEXPRESS'
-        # database = 'Centegy_SnDPro_UID'
-        # username = 'sa'
-        # password = 'unilever1'
-
-        # server = 'den1.mssql4.gear.host'
-        # database = 'sqlsrv'
-        # username = 'sqlsrv'
-        # password = 'terserah!'
-
-        cursor = None
-
         try:
-            cnxn = pyodbc.connect(driver='{ODBC Driver 13 for SQL Server}',
+            cnxn = pyodbc.connect(driver='{ODBC Driver 11 for SQL Server}',
                                   server=server,
                                   database=_db,
                                   uid=_uname,
@@ -160,7 +153,9 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                                   timeout=5)
 
             cnxn.setencoding(encoding='utf-8', ctype=pyodbc.SQL_CHAR)
-            cursor = cnxn.cursor()
+
+            return cnxn
+
         except pyodbc.Error as err :
             msg = "Can't connect to database server.<br>Do you want to input address server manually?"
             errorSrv = QMessageBox.critical(self, "Error", msg, QMessageBox.Yes | QMessageBox.Abort)
@@ -171,9 +166,18 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
             else :
                 raise SystemExit(0)
 
-        que = "SELECT CONCAT(p.PJP,' / '+P.LDESC) as PJPSales, p.PJP, p.DSR, p.LDESC as SalesName, a.LDESC as CategoryName FROM PJP_HEAD p INNER JOIN SELLING_CATEGORY a on a.SELL_CATEGORY = p.SELL_CATEGORY INNER JOIN DSR ds on ds.DSR = p.DSR WHERE a.SELL_CATEGORY = ? and ds.JOB_TYPE = 01 and p.ACTIVE = 1"
 
-        params = (CatGor)
+    # Get data items by category
+    def getDataItems(self, CatGor) :
+
+        cursor = None
+
+        cnxn = self.connDB()
+        cursor = cnxn.cursor()
+
+        que = "SELECT a.SKU FROM SKU_CATEGORY a INNER JOIN SELLING_CATEGORY b on b.SELL_CATEGORY = a.SELL_CATEGORY WHERE a.SKU_INDEX IS NOT NULL and a.SKU_INDEX != '0' and a.SELL_CATEGORY = ?"
+
+        params = str(CatGor)
 
         cursor.execute(que, params)
 
@@ -183,11 +187,41 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
         del cursor
         cnxn.close()
 
-        self.statusBar().showMessage('Connected: '+settings.value("server", type=str)+ ' (v'+VERSION+')')
+        items = []
+
+        for element in results :
+            for item in element :
+                items.append(item)
+
+        return items
+
+
+    # get data from database HCF
+    def getDataSales(self, CatGor):
+
+        settings = QSettings(_configFile, "PJP_Changer")
+        server = settings.value("server")
+
+        cursor = None
+
+        cnxn = self.connDB()
+        cursor = cnxn.cursor()
+
+        que = "SELECT CONCAT(p.PJP,' / '+P.LDESC) as PJPSales, p.PJP, p.DSR, p.LDESC as SalesName, a.LDESC as CategoryName FROM PJP_HEAD p INNER JOIN SELLING_CATEGORY a on a.SELL_CATEGORY = p.SELL_CATEGORY INNER JOIN DSR ds on ds.DSR = p.DSR WHERE a.SELL_CATEGORY = ? and ds.JOB_TYPE = 01 and p.ACTIVE = 1"
+
+        params = str(CatGor)
+
+        cursor.execute(que, params)
+
+        results = cursor.fetchall()
+
+        cursor.close()
+        del cursor
+        cnxn.close()
+
+        self.statusBar().showMessage('Connected: '+settings.value("server", type=str)+ ' (v'+appinfo._version+')')
 
         return results
-
-    def lookup(self) :
 
 
     # open XML
@@ -206,6 +240,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
             # self.ckXC.setEnabled(True)
 
         # End of def openXML
+
 
     # set
     def setItem(self):
@@ -234,11 +269,6 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
 
         # End of def setItem.
 
-    # logo path
-    def resource_path(self, relative_path) :
-        """ Get absolute path to resource, works for dev and for PyInstaller """
-        base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-        return os.path.join(base_path, relative_path)
 
     # changer
     def changer(self, pathXML, cmpCat) :
@@ -248,18 +278,22 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
         else :
 
             # for HCF
-            if cmpCat == '1' :
+            if cmpCat == '103' :
                 codeSales = str(self.cbHCF.itemData(self.cbHCF.currentIndex()))
                 nameSales = str(self.cbHCF.currentText())
                 # search sales PJP
                 srchTMP = self.SearchDataHCF(nameSales)
+                countDoc = "3"
+                catName = "HCF"
 
             # for PC
-            if cmpCat == '2' :
+            if cmpCat == '102' :
                 codeSales = str(self.cbPC.itemData(self.cbPC.currentIndex()))
                 nameSales = str(self.cbPC.currentText())
                 # search sales PJP
                 srchTMP = self.SearchDataPC(nameSales)
+                countDoc = "2"
+                catName = "PC"
 
             # for DC
             # if cmpCat == '3' :
@@ -271,8 +305,28 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                 # codeSales = str(self.cbXC.itemData(self.cbXC.currentIndex()))
                 # nameSales = str(self.cbXC.currentText())
 
+            # formating filename and output dir
+            resPath, resFilename = os.path.split(pathXML)
+            current_dir = os.getcwd()
+            Fname, Fext = os.path.splitext(resFilename)
+            newFile = "{Fname}{cmpCat}{Fext}".format(Fname=Fname, cmpCat=cmpCat, Fext=Fext)
+            resPathFile = os.path.abspath(os.path.join(current_dir, NEWDIR, newFile))
+            resultPath = Path(os.path.abspath(os.path.join(current_dir, NEWDIR, newFile)))
+
+            # write log file
+            dirLog= "D:\OSDP"
+            logFile = "{Fname}{catName}{Fext}".format(Fname=Fname, catName='-'+catName, Fext='.log')
+            logPath = Path(os.path.abspath(os.path.join(dirLog, LOGFOLDER, logFile)))
+            logPath.parent.mkdir(parents=True, exist_ok=True)
+            nowTime = datetime.now()
+            curDate = nowTime.strftime("%d-%m-%Y %H:%M:%S") # current datetime
+            outLog = open(logPath, 'w')
+            outLog.write('Date\t\t\t:' +curDate+ '\n')
+
+
             # Parsing file xml
             tree = etree.parse(pathXML)
+
 
             # Validating the value before make any change
             if len(codeSales) > 0 :
@@ -284,13 +338,25 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                 # format 4 Digit
                 codePJP = "{:0>4}".format(srch[1])
 
+                # get PO Number
+                PONum = tree.find('.//Comments').text
+                # get outlet code
+                ouletCode = tree.find('.//CustomerCode').text
+
+                # write outlet code
+                outLog.write('Outlet Code\t\t:' +ouletCode+ '\n')
+                # write PO number to log
+                outLog.write('PO Number\t\t:' +PONum+ '\n')
+                # write category
+                outLog.write('Category\t\t:' +catName+ '\n\n')
+
                 # get document number
                 DocNum = tree.find('.//DocumentNumber').text
-                DocNum = DocNum[:2] + cmpCat + DocNum[3:] # replace 3 digit from front
+                DocNum = DocNum[:2] + countDoc + DocNum[3:] # replace 3 digit from front
 
                 # get RVTKey
                 RVTKey = tree.find('.//RVTKey').text
-                RVTKey = RVTKey[:2] + cmpCat + RVTKey[3:] # replace 3 digit from front
+                RVTKey = RVTKey[:2] + countDoc + RVTKey[3:] # replace 3 digit from front
 
                 # change RouteCode
                 tree.find('.//RouteCode').text = codePJP
@@ -312,20 +378,29 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
 
                 tree.find('.//SalesmanCode').text = codeSales
 
+                # get items by category
+                arrItems = self.getDataItems(cmpCat)
+
+
+                outLog.write('------------------------\n')
+                outLog.write('Below list SKU deleted:\n')
+                outLog.write('------------------------\n')
+                for order in tree.xpath("//SalesOrderDetail") :
+                    item = order.xpath('ItemCode')
+                    item_code = item[0].text
+
+                    if item_code not in arrItems:
+                        order.getparent().remove(order)
+                        outLog.write(item_code+ '\n')
+
             else:
                 QMessageBox.warning(self, "Warning", "Please select Salesman first", QMessageBox.Ok)
 
             # write data XML with Value of combobox.
             if len(codePJP) > 0 and len(codeSales) > 0:
-                resPath, resFilename = os.path.split(pathXML)
-                current_dir = os.getcwd()
-                Fname, Fext = os.path.splitext(resFilename)
-                newFile = "{Fname}{cmpCat}{Fext}".format(Fname=Fname, cmpCat=cmpCat, Fext=Fext)
-                resPathFile = os.path.abspath(os.path.join(current_dir, NEWDIR, newFile))
-                resultPath = Path(os.path.abspath(os.path.join(current_dir, NEWDIR, newFile)))
                 resultPath.parent.mkdir(parents=True, exist_ok=True)
-
                 tree.write(resPathFile, xml_declaration=True, encoding='utf-8', method="xml")
+                outLog.close()
                 return True
             else :
                 return False
@@ -343,18 +418,18 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
 
         if len(pathXML) == 0:
 
-            QMessageBox.warning(self, "Warning", "You Must Select File First!", QMessageBox.Ok)
+            QMessageBox.warning(self, "Warning", "Please select XML file first!", QMessageBox.Ok)
 
         else :
 
             if self.ckHCF.isChecked() or self.ckPC.isChecked() or self.ckDC.isChecked() or self.ckXC.isChecked():
 
                 if self.ckHCF.isChecked() :
-                    catPO = '1'
+                    catPO = '103'
                     self.changer(pathXML, catPO)
 
                 if self.ckPC.isChecked() :
-                    catPO = '2'
+                    catPO = '102'
                     self.changer(pathXML, catPO)
 
                 # if self.ckDC.isChecked() :
@@ -379,9 +454,8 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
         QApplication.exit(EXIT_CODE_REBOOT)
         QProcess.startDetached(QCoreApplication.applicationFilePath())
 
-# main apps
-def main_start() :
 
+if __name__ == '__main__' :
     app = QApplication(sys.argv)
 
     # create splash screen
@@ -407,12 +481,9 @@ def main_start() :
     time.sleep(1)
 
     window = mainWindow()
+    window.setWindowTitle(appinfo._appname)
     # window.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
     # window.setWindowFlags(QtCore.Qt.WindowMinimizeButtonHint)
     window.show()
     splash.finish(window)
     sys.exit(app.exec_())
-
-
-if __name__ == '__main__' :
-    main_start()
