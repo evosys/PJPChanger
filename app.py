@@ -145,7 +145,7 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
         server = settings.value("server")
 
         try:
-            cnxn = pyodbc.connect(driver='{ODBC Driver 11 for SQL Server}',
+            cnxn = pyodbc.connect(driver='{ODBC Driver 13 for SQL Server}',
                                   server=server,
                                   database=_db,
                                   uid=_uname,
@@ -207,7 +207,10 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
         cnxn = self.connDB()
         cursor = cnxn.cursor()
 
-        que = "SELECT CONCAT(p.PJP,' / '+P.LDESC) as PJPSales, p.PJP, p.DSR, p.LDESC as SalesName, a.LDESC as CategoryName FROM PJP_HEAD p INNER JOIN SELLING_CATEGORY a on a.SELL_CATEGORY = p.SELL_CATEGORY INNER JOIN DSR ds on ds.DSR = p.DSR WHERE a.SELL_CATEGORY = ? and ds.JOB_TYPE = 01 and p.ACTIVE = 1"
+        # que = "SELECT CONCAT(p.PJP,' / '+P.LDESC) as PJPSales, p.PJP, p.DSR, p.LDESC as SalesName, a.LDESC as CategoryName FROM PJP_HEAD p INNER JOIN SELLING_CATEGORY a on a.SELL_CATEGORY = p.SELL_CATEGORY INNER JOIN DSR ds on ds.DSR = p.DSR WHERE a.SELL_CATEGORY = ? and ds.JOB_TYPE = 01 and p.ACTIVE = 1"
+
+
+        que = "SELECT (p.PJP + ' / ' +P.LDESC) as PJPSales, p.PJP, p.DSR, p.LDESC as SalesName, a.LDESC as CategoryName FROM PJP_HEAD p INNER JOIN SELLING_CATEGORY a on a.SELL_CATEGORY = p.SELL_CATEGORY INNER JOIN DSR ds on ds.DSR = p.DSR WHERE a.SELL_CATEGORY = ? and ds.JOB_TYPE = 01 and p.ACTIVE = 1"
 
         params = str(CatGor)
 
@@ -385,13 +388,16 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                 outLog.write('------------------------\n')
                 outLog.write('Below list SKU deleted:\n')
                 outLog.write('------------------------\n')
+
                 for order in tree.xpath("//SalesOrderDetail") :
                     item = order.xpath('ItemCode')
                     item_code = item[0].text
+                    # print(item_code)
 
                     if item_code not in arrItems:
                         order.getparent().remove(order)
                         outLog.write(item_code+ '\n')
+                        # print(item_code+':'+cmpCat)
 
             else:
                 QMessageBox.warning(self, "Warning", "Please select Salesman first", QMessageBox.Ok)
@@ -401,11 +407,21 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
                 resultPath.parent.mkdir(parents=True, exist_ok=True)
                 tree.write(resPathFile, xml_declaration=True, encoding='utf-8', method="xml")
                 outLog.close()
-                return True
+
+                return resPathFile
             else :
                 return False
             # End of def saveChange.
 
+    # checking it SalesOrderDetail available on output
+    def ChkItemXMLout(self, ResPathXML) :
+        # Parsing file xml
+        tree = etree.parse(ResPathXML)
+
+        s = tree.xpath("//SalesOrderDetail")
+
+        if len(s) <= 0 :
+            os.remove(ResPathXML)
 
     # button save
     def saveChange(self) :
@@ -426,11 +442,21 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
 
                 if self.ckHCF.isChecked() :
                     catPO = '103'
-                    self.changer(pathXML, catPO)
+                    outPath = self.changer(pathXML, catPO)
+
+                    # delete file if no has item
+                    ResOUTPath = os.path.abspath(outPath)
+                    self.ChkItemXMLout(ResOUTPath)
 
                 if self.ckPC.isChecked() :
                     catPO = '102'
-                    self.changer(pathXML, catPO)
+                    outPath = self.changer(pathXML, catPO)
+
+                    # delete file if no has item
+                    ResOUTPath = os.path.abspath(outPath)
+                    self.ChkItemXMLout(ResOUTPath)
+
+                # print(outPath)
 
                 # if self.ckDC.isChecked() :
                     # catPO = '3'
@@ -442,7 +468,12 @@ class mainWindow(QMainWindow, Ui_PJPChanger) :
 
                 reply = QMessageBox.information(self, "Information", "Success!", QMessageBox.Ok)
                 if reply == QMessageBox.Ok :
+
                     os.startfile(str(resultPath))
+
+
+
+
 
             else :
 
